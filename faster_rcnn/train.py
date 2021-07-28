@@ -7,6 +7,7 @@ from torch.utils.data import Dataset
 from torchvision import datasets
 from torchvision.transforms import ToTensor
 from tqdm import tqdm
+import pandas as pd
 
 from modeling import get_fasterrcnn_model_for_cowboy
 
@@ -17,10 +18,13 @@ root_path = '../data/images'
 ann_path = '../data/train.json'
 coco_det = datasets.CocoDetection(root=root_path, annFile=ann_path, transform=ToTensor())
 
+# test_df = pd.read_csv('../data/valid.csv')
+# dev_ids = set(test_df.id.to_list())
+
 L = len(coco_det)
 train_size = int(L * 0.9)
 dev_size = L - train_size
-train_set, dev_set = torch.utils.data.random_split(coco_det, [train_size, dev_size])
+train_set, dev_set = torch.utils.data.random_split(coco_det, [train_size, dev_size], torch.Generator().manual_seed(42))
 
 # %%
 # labels
