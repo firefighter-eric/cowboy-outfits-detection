@@ -1,9 +1,5 @@
-import torch
 import torchvision
-from torch.utils.data import Dataset
-from torchvision import datasets
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-from torchvision.transforms import ToTensor
 
 
 def get_fasterrcnn_model_for_cowboy(pretrained=True):

@@ -7,9 +7,9 @@ from torchvision.transforms import ToTensor
 
 from tqdm import tqdm
 
-labels = {87, 131, 318, 588, 1034}
-labels = sorted(list(labels))
-label_idx = {l: i for i, l in enumerate(sorted(list(labels)))}
+labels = {0, 87, 131, 318, 588, 1034}
+idx2label = sorted(list(labels))
+label2idx = {l: i for i, l in enumerate(sorted(list(idx2label)))}
 
 
 class CocoDataLoader:
@@ -20,6 +20,9 @@ class CocoDataLoader:
 
         # test_df = pd.read_csv('../data/valid.csv')
         # dev_ids = set(test_df.id.to_list())
+        self.idx2label = idx2label
+        self.label2idx = label2idx
+        self.idx2str = ['Nothing', 'belt', 'boot', 'cowboy_hat', 'jacket', 'sunglasses']
 
         self.L = len(coco_det)
         train_size = int(self.L * 0.9)
@@ -60,10 +63,11 @@ class CocoDataLoader:
                     x1, y1, w, h, = t['bbox']
                     boxes.append([x1, y1, x1 + w, y1 + h])
                 boxes = torch.tensor(boxes)
-                labels = torch.tensor([label_idx[t['category_id']] for t in target], dtype=torch.int64)
+                labels = torch.tensor([label2idx[t['category_id']] for t in target], dtype=torch.int64)
                 out.append({'boxes': boxes,
                             'labels': labels})
             return out
 
         images, targets = zip(*batch)
         return images, process_targets(targets)
+
