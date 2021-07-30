@@ -29,10 +29,10 @@ class CocoDataLoader:
         dev_size = self.L - train_size
         train_set, dev_set = torch.utils.data.random_split(coco_det, [train_size, dev_size],
                                                            torch.Generator().manual_seed(42))
-        self.train_data_loader = torch.utils.data.DataLoader(train_set, batch_size=8, shuffle=True, num_workers=0,
+        self.train_data_loader = torch.utils.data.DataLoader(train_set, batch_size=4, shuffle=True, num_workers=0,
                                                              collate_fn=self.collate_fn_coco)
 
-        self.dev_data_loader = torch.utils.data.DataLoader(dev_set, batch_size=8, shuffle=False, num_workers=0,
+        self.dev_data_loader = torch.utils.data.DataLoader(dev_set, batch_size=4, shuffle=False, num_workers=0,
                                                            collate_fn=self.collate_fn_coco)
 
     @staticmethod
