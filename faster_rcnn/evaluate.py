@@ -6,6 +6,7 @@ from torch import Tensor
 from tqdm import tqdm
 
 from data_process import CocoDataLoader
+from coco_eval import coco_eval
 
 
 class Pipeline:
@@ -40,7 +41,10 @@ def preds2coco_eval_result(preds, image_ids, idx2label, threshold=0) -> List[Dic
 
 
 if __name__ == '__main__':
-    model_path = '../outputs/models/m8/m5.pt'
+    # model_path = '../models/retinanet/m1/e9.pt'
+    # out_filename = '/retinanet_m1e9.json'
+    model_path = '../models/faster_rcnn/m14/e5.pt'
+    out_filename = '/faster_rnn_m14e5.json'
     device = 'cuda:0'
 
     pipeline = Pipeline(model_path, device)
@@ -61,10 +65,10 @@ if __name__ == '__main__':
 
     coco_result = preds2coco_eval_result(preds, image_ids, idx2label)
 
-    out_filename = 'm8e5.json'
-
-    with open('../outputs/preds/' + out_filename, 'w') as fout:
+    with open('../outputs/eval/preds/' + out_filename, 'w') as fout:
         json.dump(preds, fout)
 
-    with open('../outputs/coco_results/' + out_filename, 'w') as fout:
+    with open('../outputs/eval/coco_results/' + out_filename, 'w') as fout:
         json.dump(coco_result, fout)
+
+    coco_eval('../outputs/eval/coco_results/' + out_filename)

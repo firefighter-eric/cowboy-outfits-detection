@@ -1,0 +1,27 @@
+def pick_from_id(dataset, ids):
+    dataset_out = []
+    for img, targets in tqdm(dataset):
+        _targets = []
+        for t in targets:
+            if t['id'] in ids:
+                print(1)
+                _targets.append(t)
+        if _targets:
+            print(1)
+            dataset_out.append([img, _targets])
+    return dataset_out
+
+
+dev_dataset = pick_from_id(coco_det, dev_ids)
+
+# for name, para in faster_rcnn_model.named_parameters():
+#     if name not in {'roi_heads.box_predictor.cls_score.weight',
+#                     'roi_heads.box_predictor.cls_score.bias',
+#                     'roi_heads.box_predictor.bbox_pred.weight',
+#                     'roi_heads.box_predictor.bbox_pred.bias'}:
+#         para.requires_grad = False
+#     else:
+#         para.requires_grad = True
+
+# for name, para in faster_rcnn_model.backbone.named_parameters():
+#     para.requires_grad = False

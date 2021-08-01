@@ -30,7 +30,7 @@ class CocoDataLoader:
         self.idx2str = ['Nothing', 'belt', 'boot', 'cowboy_hat', 'jacket', 'sunglasses']
 
         self.L = len(self.coco_det)
-        train_size = int(self.L * 0.9)
+        train_size = int(self.L * 0.95)
         dev_size = self.L - train_size
         train_set, dev_set = torch.utils.data.random_split(self.coco_det, [train_size, dev_size],
                                                            torch.Generator().manual_seed(42))
@@ -38,12 +38,12 @@ class CocoDataLoader:
                                                      collate_fn=self.collate_fn_coco)
         self.test_all = torch.utils.data.DataLoader(self.coco_det, batch_size=4, shuffle=True, num_workers=0,
                                                     collate_fn=self.collate_fn_coco_for_eval)
-        self.train_data_loader = torch.utils.data.DataLoader(train_set, batch_size=4, shuffle=True, num_workers=0,
-                                                             collate_fn=self.collate_fn_coco)
-        self.dev_data_loader = torch.utils.data.DataLoader(dev_set, batch_size=4, shuffle=False, num_workers=0,
-                                                           collate_fn=self.collate_fn_coco)
-        self.test_data_loader = torch.utils.data.DataLoader(train_set, batch_size=4, shuffle=False, num_workers=0,
-                                                            collate_fn=self.collate_fn_coco_for_eval)
+        self.train_95 = torch.utils.data.DataLoader(train_set, batch_size=4, shuffle=True, num_workers=0,
+                                                    collate_fn=self.collate_fn_coco)
+        self.dev_05 = torch.utils.data.DataLoader(dev_set, batch_size=4, shuffle=False, num_workers=0,
+                                                  collate_fn=self.collate_fn_coco)
+        self.test_05 = torch.utils.data.DataLoader(dev_set, batch_size=4, shuffle=False, num_workers=0,
+                                                   collate_fn=self.collate_fn_coco_for_eval)
 
     @staticmethod
     def _get_labels(dataset):
