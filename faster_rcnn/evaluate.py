@@ -6,6 +6,8 @@ from torch import Tensor
 from tqdm import tqdm
 
 from data_process import CocoDataLoader
+from coco_eval import coco_eval
+from configuration import Args
 
 
 class Pipeline:
@@ -40,10 +42,9 @@ def preds2coco_eval_result(preds, image_ids, idx2label, threshold=0) -> List[Dic
 
 
 if __name__ == '__main__':
-    model_path = '../outputs/models/m8/m5.pt'
-    device = 'cuda:0'
+    args = Args()
 
-    pipeline = Pipeline(model_path, device)
+    pipeline = Pipeline(args.best_model_path, args.device)
 
     cdl = CocoDataLoader()
     test_data = cdl.test_all
@@ -61,10 +62,10 @@ if __name__ == '__main__':
 
     coco_result = preds2coco_eval_result(preds, image_ids, idx2label)
 
-    out_filename = 'm8e5.json'
+    # with open('../outputs/eval/preds/' + out_filename, 'w') as fout:
+    #     json.dump(preds, fout)
 
-    with open('../outputs/preds/' + out_filename, 'w') as fout:
-        json.dump(preds, fout)
-
-    with open('../outputs/coco_results/' + out_filename, 'w') as fout:
+    with open(args.eval_coco_path, 'w') as fout:
         json.dump(coco_result, fout)
+
+    ce = coco_eval(args.eval_coco_path)

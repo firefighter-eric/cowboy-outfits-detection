@@ -1,13 +1,16 @@
+import os
+
 import torch
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
+import modeling
+from configuration import Args
 from data_process import CocoDataLoader
-from modeling import get_fasterrcnn_model_for_cowboy
-from torch.utils.tensorboard import SummaryWriter
 
 
 def test_model(images, targets):
-    model = get_fasterrcnn_model_for_cowboy()
+    model = modeling.get_fasterrcnn_model_for_cowboy()
 
     # For Training
     model.train()
@@ -20,28 +23,29 @@ def test_model(images, targets):
 
 
 class Trainer:
-    def __init__(self, model, num_epochs, device, train_data, dev_data, model_out, log_out):
+    def __init__(self, args, model, optimizer, train_data, dev_data=None):
         self.model = model
-        params = [p for p in self.model.parameters() if p.requires_grad]
-        self.optimizer = torch.optim.SGD(params, lr=0.0001, weight_decay=0.00001)
-        # optimizer = torch.optim.Adam(params)
+        self.optimizer = optimizer
         self.lr_scheduler = None
-        self.device = device
-        self.num_epochs = num_epochs
+        self.device = args.device
+        self.num_epochs = args.num_epochs
         self.train_data = train_data
         self.dev_data = dev_data
-        self.model_out = model_out
-        self.writer = SummaryWriter(log_dir=log_out)
+        self.model_out = args.model_out
+        self.writer = SummaryWriter(log_dir=args.log_dir)
         self.n_iter = 0
 
+        if not os.path.exists(self.model_out):
+            os.makedirs(self.model_out)
+
     def train(self):
-        self.model.to(DEVICE)
+        self.model.to(self.device)
         self.model.train()
 
         self.eval()
         for epoch in range(self.num_epochs):
             self.train_one_epoch()
-            torch.save(self.model, f'{self.model_out}m{epoch}.pt')
+            torch.save(self.model, f'{self.model_out}/e{epoch}.pt')
             self.eval()
 
     def train_one_epoch(self):
@@ -58,14 +62,14 @@ class Trainer:
             if self.lr_scheduler:
                 self.lr_scheduler.step()
 
-            if i % 100 == 0:
+            if self.n_iter % 10 == 0:
                 self.writer.add_scalar('Loss/train', loss, self.n_iter)
                 loss_dict = {k: round(float(v), 3) for k, v in loss_dict.items()}
                 for k, v in loss_dict.items():
                     self.writer.add_scalar(f'{k}/train', v, self.n_iter)
 
-                print(f'\ntrain loss: {float(loss):.3}')
-                print(f'train loss dict: {loss_dict}')
+                # print(f'\ntrain loss: {float(loss):.3}')
+                # print(f'train loss dict: {loss_dict}')
 
             self.n_iter += 1
 
@@ -80,36 +84,32 @@ class Trainer:
                 loss += float(sum(outputs.values()))
         loss /= data_size
 
-        print(f'iter: {self.n_iter}\tdev loss: {loss:.3f}')
+        # print(f'iter: {self.n_iter}\tdev loss: {loss:.3f}')
         self.writer.add_scalar('Loss/dev', loss, self.n_iter)
 
 
-if __name__ == '__main__':
-    DEVICE = 'cuda:0'
+def main():
+    args = Args()
 
     cdl = CocoDataLoader()
-    data = cdl.train_all
-    # train_data = cdl.train_data_loader
-    dev_data = cdl.dev_data_loader
+    train_data = cdl.train_95
+    dev_data = cdl.dev_05
 
-    faster_rcnn_model = get_fasterrcnn_model_for_cowboy()
-    # for name, para in faster_rcnn_model.named_parameters():
-    #     if name not in {'roi_heads.box_predictor.cls_score.weight',
-    #                     'roi_heads.box_predictor.cls_score.bias',
-    #                     'roi_heads.box_predictor.bbox_pred.weight',
-    #                     'roi_heads.box_predictor.bbox_pred.bias'}:
-    #         para.requires_grad = False
-    #     else:
-    #         para.requires_grad = True
+    # model = modeling.get_retinanet_model_for_cowboy()
+    # model = modeling.get_fasterrcnn_resnet50_model()
+    # model = modeling.get_fasterrcnn_resnet153_model(num_classes=6, pretrained=True)
+    model = torch.load('../models/faster_rcnn/m20/e1.pt')
 
-    for name, para in faster_rcnn_model.backbone.named_parameters():
-        para.requires_grad = False
+    params = [p for p in model.parameters() if p.requires_grad]
+    optimizer = torch.optim.SGD(params, lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
-    trainer = Trainer(model=faster_rcnn_model,
-                      num_epochs=10,
-                      device=DEVICE,
-                      train_data=data,
-                      dev_data=dev_data,
-                      model_out='../outputs/models/m8/',
-                      log_out='../runs/m8/')
+    trainer = Trainer(args=args,
+                      model=model,
+                      optimizer=optimizer,
+                      train_data=train_data,
+                      dev_data=dev_data)
     trainer.train()
+
+
+if __name__ == '__main__':
+    main()
