@@ -4,18 +4,15 @@ import cv2
 import pandas as pd
 from torchvision.transforms import ToTensor
 from tqdm import tqdm
-from plot import plot
 
+from configuration import Args
 from data_process import CocoDataLoader
 from evaluate import Pipeline, preds2coco_eval_result
+from plot import plot
 
 if __name__ == '__main__':
+    args = Args()
     img_path = '../data/images/'
-    model_path = '../models/faster_rcnn/m14/e1.pt'
-    # model_path = '../models/retinanet/m1/e9.pt'
-    # result_path = '../outputs/coco_results/retinanet_m1e9.json'
-    result_path = '../outputs/coco_results/m14e1.json'
-    device = 'cuda:0'
 
     cdl = CocoDataLoader()
     idx2str = cdl.idx2str
@@ -25,7 +22,7 @@ if __name__ == '__main__':
     image_ids = df.id.to_list()
     filenames = df.file_name.to_list()
 
-    pipeline = Pipeline(model_path, device)
+    pipeline = Pipeline(args.best_model_path, args.device)
     transform = ToTensor()
 
     preds = []
@@ -44,7 +41,7 @@ if __name__ == '__main__':
     # with open('../outputs/preds/eval.json', 'w') as fout:
     #     json.dump(preds, fout)
 
-    with open(result_path, 'w') as fout:
+    with open(args.coco_result_path, 'w') as fout:
         json.dump(coco_result, fout)
 
     for img, pred in zip(imgs, preds):

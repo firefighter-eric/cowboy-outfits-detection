@@ -9,3 +9,4 @@ def coco_eval(res_path):
     ce.evaluate()
     ce.accumulate()
     ce.summarize()
+    return ce

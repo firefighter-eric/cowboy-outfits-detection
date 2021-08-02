@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 from data_process import CocoDataLoader
 from coco_eval import coco_eval
+from configuration import Args
 
 
 class Pipeline:
@@ -41,13 +42,9 @@ def preds2coco_eval_result(preds, image_ids, idx2label, threshold=0) -> List[Dic
 
 
 if __name__ == '__main__':
-    # model_path = '../models/retinanet/m1/e9.pt'
-    # out_filename = '/retinanet_m1e9.json'
-    model_path = '../models/faster_rcnn/m14/e5.pt'
-    out_filename = '/faster_rnn_m14e5.json'
-    device = 'cuda:0'
+    args = Args()
 
-    pipeline = Pipeline(model_path, device)
+    pipeline = Pipeline(args.best_model_path, args.device)
 
     cdl = CocoDataLoader()
     test_data = cdl.test_all
@@ -65,10 +62,10 @@ if __name__ == '__main__':
 
     coco_result = preds2coco_eval_result(preds, image_ids, idx2label)
 
-    with open('../outputs/eval/preds/' + out_filename, 'w') as fout:
-        json.dump(preds, fout)
+    # with open('../outputs/eval/preds/' + out_filename, 'w') as fout:
+    #     json.dump(preds, fout)
 
-    with open('../outputs/eval/coco_results/' + out_filename, 'w') as fout:
+    with open(args.eval_coco_path, 'w') as fout:
         json.dump(coco_result, fout)
 
-    coco_eval('../outputs/eval/coco_results/' + out_filename)
+    ce = coco_eval(args.eval_coco_path)

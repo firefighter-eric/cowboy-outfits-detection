@@ -4,8 +4,9 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from data_process import CocoDataLoader
 import modeling
+from configuration import Args
+from data_process import CocoDataLoader
 
 
 def test_model(images, targets):
@@ -22,29 +23,29 @@ def test_model(images, targets):
 
 
 class Trainer:
-    def __init__(self, model, num_epochs, device, train_data, dev_data, model_out, log_out):
+    def __init__(self, args, model, optimizer, train_data, dev_data=None):
         self.model = model
-        params = [p for p in self.model.parameters() if p.requires_grad]
-        self.optimizer = torch.optim.SGD(params, lr=0.005, momentum=0.9, weight_decay=0.0005)
-        # self.optimizer = torch.optim.Adam(params)
-        # self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=3, gamma=0.1)
+        self.optimizer = optimizer
         self.lr_scheduler = None
-        self.device = device
-        self.num_epochs = num_epochs
+        self.device = args.device
+        self.num_epochs = args.num_epochs
         self.train_data = train_data
         self.dev_data = dev_data
-        self.model_out = model_out
-        self.writer = SummaryWriter(log_dir=log_out)
+        self.model_out = args.model_out
+        self.writer = SummaryWriter(log_dir=args.log_dir)
         self.n_iter = 0
 
+        if not os.path.exists(self.model_out):
+            os.makedirs(self.model_out)
+
     def train(self):
-        self.model.to(DEVICE)
+        self.model.to(self.device)
         self.model.train()
 
         self.eval()
         for epoch in range(self.num_epochs):
             self.train_one_epoch()
-            torch.save(self.model, f'{self.model_out}e{epoch}.pt')
+            torch.save(self.model, f'{self.model_out}/e{epoch}.pt')
             self.eval()
 
     def train_one_epoch(self):
@@ -87,31 +88,28 @@ class Trainer:
         self.writer.add_scalar('Loss/dev', loss, self.n_iter)
 
 
-if __name__ == '__main__':
-    DEVICE = 'cuda:0'
-    # MODEL_OUT = '../models/retinanet/m4/'
-    # LOG_OUT = '../runs/retinanet/m4/'
-    MODEL_OUT = '../models/faster_rcnn/m14/'
-    LOG_OUT = '../runs/faster_rcnn/m14/'
-
-    NUM_EPOCHS = 10
-
-    if not os.path.exists(MODEL_OUT):
-        os.makedirs(MODEL_OUT)
+def main():
+    args = Args()
 
     cdl = CocoDataLoader()
     train_data = cdl.train_95
     dev_data = cdl.dev_05
 
-    # _model = modeling.get_retinanet_model_for_cowboy()
-    # _model = modeling.get_fasterrcnn_model_for_cowboy()
-    _model = modeling.get_fasterrcnn_resnet153_model(num_classes=6, pretrained=True)
+    # model = modeling.get_retinanet_model_for_cowboy()
+    # model = modeling.get_fasterrcnn_resnet50_model()
+    # model = modeling.get_fasterrcnn_resnet153_model(num_classes=6, pretrained=True)
+    model = torch.load('../models/faster_rcnn/m20/e1.pt')
 
-    trainer = Trainer(model=_model,
-                      num_epochs=NUM_EPOCHS,
-                      device=DEVICE,
+    params = [p for p in model.parameters() if p.requires_grad]
+    optimizer = torch.optim.SGD(params, lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+
+    trainer = Trainer(args=args,
+                      model=model,
+                      optimizer=optimizer,
                       train_data=train_data,
-                      dev_data=dev_data,
-                      model_out=MODEL_OUT,
-                      log_out=LOG_OUT)
+                      dev_data=dev_data)
     trainer.train()
+
+
+if __name__ == '__main__':
+    main()
