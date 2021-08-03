@@ -10,7 +10,7 @@ from data_process import CocoDataLoader
 
 
 def test_model(images, targets):
-    model = modeling.get_fasterrcnn_model_for_cowboy()
+    model = modeling.get_fasterrcnn_resnet50_model()
 
     # For Training
     model.train()
@@ -98,7 +98,7 @@ def main():
     # model = modeling.get_retinanet_model_for_cowboy()
     # model = modeling.get_fasterrcnn_resnet50_model()
     # model = modeling.get_fasterrcnn_resnet153_model(num_classes=6, pretrained=True)
-    model = torch.load('../models/faster_rcnn/m20/e1.pt')
+    model = torch.load('../models/faster_rcnn/m27/e4.pt')
 
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.SGD(params, lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)

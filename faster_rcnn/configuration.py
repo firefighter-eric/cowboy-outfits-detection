@@ -1,10 +1,10 @@
 class Args:
     num_epochs = 10
     device = 'cuda:0'
-    model_name = 'm23'
-    best_epoch = 1
-    lr = 0.0001
-    momentum = 0
+    model_name = 'm28'
+    best_epoch = 2
+    lr = 0.0005
+    momentum = 0.9
     weight_decay = 0.01
     # lr = 0.005
     # momentum = 0.9

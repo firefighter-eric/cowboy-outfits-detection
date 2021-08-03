@@ -1,3 +1,4 @@
+import json
 from typing import Tuple
 
 import torch
@@ -32,18 +33,22 @@ class CocoDataLoader:
         self.L = len(self.coco_det)
         train_size = int(self.L * 0.95)
         dev_size = self.L - train_size
-        train_set, dev_set = torch.utils.data.random_split(self.coco_det, [train_size, dev_size],
-                                                           torch.Generator().manual_seed(42))
+        self.train_set, self.dev_set = torch.utils.data.random_split(self.coco_det, [train_size, dev_size],
+                                                                     torch.Generator().manual_seed(42))
+        weights = self.get_small_obj_oversampling_weight(self.train_set, from_cache=True)
+        sampler = torch.utils.data.WeightedRandomSampler(weights=weights, num_samples=sum(weights), replacement=True)
+
         self.train_all = torch.utils.data.DataLoader(self.coco_det, batch_size=4, shuffle=True, num_workers=0,
-                                                     collate_fn=self.collate_fn_coco)
+                                                     collate_fn=self.train_collate_fn)
         self.test_all = torch.utils.data.DataLoader(self.coco_det, batch_size=4, shuffle=True, num_workers=0,
-                                                    collate_fn=self.collate_fn_coco_for_eval)
-        self.train_95 = torch.utils.data.DataLoader(train_set, batch_size=4, shuffle=True, num_workers=0,
-                                                    collate_fn=self.collate_fn_coco)
-        self.dev_05 = torch.utils.data.DataLoader(dev_set, batch_size=4, shuffle=False, num_workers=0,
-                                                  collate_fn=self.collate_fn_coco)
-        self.test_05 = torch.utils.data.DataLoader(dev_set, batch_size=4, shuffle=False, num_workers=0,
-                                                   collate_fn=self.collate_fn_coco_for_eval)
+                                                    collate_fn=self.test_collate_fn_coco)
+
+        self.train_95 = torch.utils.data.DataLoader(self.train_set, batch_size=4, num_workers=0,
+                                                    collate_fn=self.train_collate_fn, sampler=sampler)
+        self.dev_05 = torch.utils.data.DataLoader(self.dev_set, batch_size=4, shuffle=False, num_workers=0,
+                                                  collate_fn=self.train_collate_fn)
+        self.test_05 = torch.utils.data.DataLoader(self.dev_set, batch_size=4, shuffle=False, num_workers=0,
+                                                   collate_fn=self.test_collate_fn_coco)
 
     @staticmethod
     def _get_labels(dataset):
@@ -54,7 +59,7 @@ class CocoDataLoader:
         return _labels
 
     @staticmethod
-    def collate_fn_coco(batch) -> Tuple:
+    def train_collate_fn(batch) -> Tuple:
         """
 
         Args:
@@ -82,11 +87,29 @@ class CocoDataLoader:
         return images, process_targets(targets)
 
     @staticmethod
-    def collate_fn_coco_for_eval(batch) -> Tuple:
+    def test_collate_fn_coco(batch) -> Tuple:
         return tuple(zip(*batch))
+
+    @staticmethod
+    def get_small_obj_oversampling_weight(data, area=96 ** 2, from_cache=False):
+        if from_cache:
+            with open('../data/weights.json') as fin:
+                out = json.load(fin)
+            return out
+
+        out = [1] * len(data)
+        for i, (_, target) in enumerate(tqdm(data)):
+            for t in target:
+                if t['area'] < area:
+                    out[i] += 1
+
+        with open('../data/weights.json', 'w') as fout:
+            json.dump(out, fout)
+        return out
 
 
 if __name__ == '__main__':
     cdl = CocoDataLoader()
-    dev_data = cdl.dev_data_loader
-    _imgs, _targets = next(iter(dev_data))
+    test_data = cdl.test_05
+    _imgs, _targets = next(iter(test_data))
+    small_objs = cdl.get_small_obj_oversampling_weight(cdl.dev_set)
