@@ -5,7 +5,6 @@ import torch
 from torch.utils.data import Dataset
 from torchvision import datasets
 from torchvision.transforms import ToTensor
-
 from tqdm import tqdm
 
 idx2label = [0, 87, 131, 318, 588, 1034]
@@ -19,9 +18,10 @@ class CocoDataLoader:
     - idx2label (Int64Tensor[N]): the class idx2label for each ground-truth box
     """
 
-    def __init__(self):
-        root_path = '../data/images'
-        ann_path = '../data/train.json'
+    def __init__(self, data_path, from_cache=False):
+        self.data_path = data_path
+        root_path = f'{self.data_path}/images'
+        ann_path = f'{self.data_path}/train.json'
         self.coco_det = datasets.CocoDetection(root=root_path, annFile=ann_path, transform=ToTensor())
 
         # test_df = pd.read_csv('../data/valid.csv')
@@ -35,7 +35,7 @@ class CocoDataLoader:
         dev_size = self.L - train_size
         self.train_set, self.dev_set = torch.utils.data.random_split(self.coco_det, [train_size, dev_size],
                                                                      torch.Generator().manual_seed(42))
-        weights = self.get_small_obj_oversampling_weight(self.train_set, from_cache=True)
+        weights = self.get_small_obj_oversampling_weight(self.train_set, from_cache=from_cache)
         sampler = torch.utils.data.WeightedRandomSampler(weights=weights, num_samples=sum(weights), replacement=True)
 
         self.train_all = torch.utils.data.DataLoader(self.coco_det, batch_size=4, shuffle=True, num_workers=0,
@@ -90,10 +90,9 @@ class CocoDataLoader:
     def test_collate_fn_coco(batch) -> Tuple:
         return tuple(zip(*batch))
 
-    @staticmethod
-    def get_small_obj_oversampling_weight(data, area=96 ** 2, from_cache=False):
+    def get_small_obj_oversampling_weight(self, data, area=96 ** 2, from_cache=False, save=False):
         if from_cache:
-            with open('../data/weights.json') as fin:
+            with open(f'{self.data_path}/weights.json') as fin:
                 out = json.load(fin)
             return out
 
@@ -103,8 +102,9 @@ class CocoDataLoader:
                 if t['area'] < area:
                     out[i] += 1
 
-        with open('../data/weights.json', 'w') as fout:
-            json.dump(out, fout)
+        if save:
+            with open(f'{self.data_path}/weights.json', 'w') as fout:
+                json.dump(out, fout)
         return out
 
 

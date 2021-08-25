@@ -14,11 +14,12 @@ if __name__ == '__main__':
     args = Args()
     img_path = '../data/images/'
 
-    cdl = CocoDataLoader()
+    cdl = CocoDataLoader(args.data_dir, from_cache=True)
     idx2str = cdl.idx2str
     idx2label = cdl.idx2label
 
-    df = pd.read_csv('../data/valid.csv')
+    # df = pd.read_csv('../data/valid.csv')
+    df = pd.read_csv('../data/test.csv')
     image_ids = df.id.to_list()
     filenames = df.file_name.to_list()
 

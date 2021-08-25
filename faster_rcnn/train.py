@@ -91,12 +91,12 @@ class Trainer:
 def main():
     args = Args()
 
-    cdl = CocoDataLoader()
+    cdl = CocoDataLoader(args.data_dir)
     train_data = cdl.train_95
     dev_data = cdl.dev_05
 
-    # model = modeling.get_retinanet_model_for_cowboy()
-    # model = modeling.get_fasterrcnn_resnet50_model()
+    # model = modeling.get_retinanet_model_for_cowboy(num_classes=6)
+    # model = modeling.get_fasterrcnn_resnet50_model(num_classes=6)
     # model = modeling.get_fasterrcnn_resnet153_model(num_classes=6, pretrained=True)
     model = torch.load('../models/faster_rcnn/m27/e4.pt')
 
